@@ -3,7 +3,7 @@ from telebot import types
 
 # --- الإعدادات ---
 TOKEN = "8650625251:AAFcv5MnB3ssM5DMCFSvrzPEgYGWtRc1U88"  
-CHANNEL_ID = "@iran_telex"  # معرف قناتك (تأكد أن البوت مشرف فيها)
+CHANNEL_ID = "-1003631235602"  # معرف قناتك (تأكد أن البوت مشرف فيها)
 bot = telebot.TeleBot(TOKEN)
 
 # --- دالة التحقق من الاشتراك ---
