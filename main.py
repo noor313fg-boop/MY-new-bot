@@ -3,7 +3,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # --- الإعدادات ---
 TOKEN = "8650625251:AAFcv5MnB3ssM5DMCFSvrzPEgYGWtRc1U88"  
-CHANNEL_ID = -1003631235602  # معرف القناة رقمي صحيح
+CHANNEL_ID = "@irantelexnews"  # معرف القناة رقمي صحيح
 
 bot = telebot.TeleBot(TOKEN)
 
