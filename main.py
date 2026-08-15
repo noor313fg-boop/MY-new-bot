@@ -11,7 +11,6 @@ bot = telebot.TeleBot(TOKEN)
 def check_subscription(user_id):
     try:
         member = bot.get_chat_member(CHANNEL_ID, user_id)
-        # إذا كان عضو أو مشرف أو مؤسس، يعتبر مشتركاً
         if member.status in ['member', 'administrator', 'creator']:
             return True
         return False
@@ -24,11 +23,9 @@ def check_subscription(user_id):
 def send_welcome(message):
     user_id = message.from_user.id
     
-    # فحص الاشتراك
     if not check_subscription(user_id):
-        # إنشاء زر الاشتراك الإجباري
         markup = InlineKeyboardMarkup()
-        channel_button = InlineKeyboardButton("اشترك في قناة إيران تليكس نيوز", url="https://t.me/irantlex") # استبدل المعرف برابط قناتك إذا لزم
+        channel_button = InlineKeyboardButton("اشترك في قناة إيران تليكس نيوز", url="https://t.me/irantlex")
         check_button = InlineKeyboardButton("تحقق من الاشتراك 🔄", callback_data="check_sub")
         markup.add(channel_button)
         markup.add(check_button)
@@ -41,7 +38,6 @@ def send_welcome(message):
         )
         return
 
-    # إذا كان مشتركاً، يظهر له هذا الترحيب
     bot.send_message(message.chat.id, "أهلاً بك! يمكنك الآن استخدام البوت بكل سلاسة.")
 
 # --- زر التحقق من الاشتراك ---
@@ -51,7 +47,6 @@ def callback_query(call):
     if check_subscription(user_id):
         bot.answer_callback_query(call.id, "شكراً لاشتراكك! تم تفعيل البوت.")
         bot.send_message(call.message.chat.id, "ممتاز! أهلاً بك مجدداً، أرسل ما تريد.")
-        # حذف رسالة الاشتراك
         try:
             bot.delete_message(call.message.chat.id, call.message.message_id)
         except:
@@ -60,6 +55,6 @@ def callback_query(call):
         bot.answer_callback_query(call.id, "لم تقم بالاشتراك بعد!", show_alert=True)
 
 # --- تشغيل البوت ---
-if name == "main":
+if __name__ == "__main__":
     print("Bot is running...")
     bot.infinity_polling()
