@@ -69,13 +69,30 @@ def handle_all_messages(message):
     
     # هنا يتم التعامل مع الرابط الذي ترسله
     bot.send_message(message.chat.id, f"جاري العمل على الرابط الذي أرسلته...\n{text}", parse_mode="Markdown")
-    
-    # ----------------------------------------------------
-    # ملاحظة: في هذا المكان يمكنك وضع كود التحميل الخاص بك 
-    # (مثل استخراج الفيديو أو الملف من الرابط)
-    # ----------------------------------------------------
-
-# --- تشغيل البوت ---
+@bot.message_handler(func=lambda message: True)
+def handle_media_download(message):
+    if not check_subscription(message.from_user.id):
+        bot.send_message(message.chat.id, "عذراً، يجب عليك الاشتراك في القناة أولاً.")
+        return
+    url = message.text.strip()
+    if not url.startswith("http"):
+        bot.send_message(message.chat.id, "الرجاء إرسال رابط صحيح.")
+        return
+    msg = bot.send_message(message.chat.id, "⏳ جاري تحميل الفيديو...")
+    output_template = "video.mp4"
+    try:
+        if os.path.exists(output_template): os.remove(output_template)
+        with yt_dlp.YoutubeDL({'outtmpl': output_template, 'format': 'best', 'socket_timeout': 30}) as ydl:
+            ydl.download([url])
+        if os.path.exists(output_template):
+            with open(output_template, 'rb') as f:
+                bot.send_video(message.chat.id, f, caption="✅ تم التحميل بنجاح عبر إيران تلكس")
+            os.remove(output_template)
+            bot.delete_message(message.chat.id, msg.message_id)
+        else:
+            bot.edit_message_text("❌ لم يتم العثور على الفيديو.", message.chat.id, msg.message_id)
+    except:
+        bot.edit_message_text("❌ حدث خطأ أثناء التحميل.", message.chat.id, msg.message_id)
 if __name__ == "__main__":
     print("Bot is running...")
     bot.infinity_polling()
