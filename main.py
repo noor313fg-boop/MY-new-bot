@@ -2,7 +2,7 @@ import os
 import telebot
 import yt_dlp
 
-TOKEN = 'ضع_توكن_البوت_هنا'
+TOKEN = '8650625251:AAFcv5MnB3ssM5DMCFSvrzPEgYGWtRc1U88'
 bot = telebot.TeleBot(TOKEN)
 
 @bot.message_handler(commands=['start'])
