@@ -1,10 +1,12 @@
+import os
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+import yt_dlp
 
-# --- الإعدادات ---
+# --- الإعدادات الأساسية ---
 TOKEN = "8650625251:AAFcv5MnB3ssM5DMCFSvrzPEgYGWtRc1U88"  
-CHANNEL_ID = "-1003631235602"  # رقم معرف القناة الصحيح
-CHANNEL_LINK = "https://t.me/irantelexnews"  # رابط قناة إيران تلكس نيوز
+CHANNEL_ID = "-1003631235602"  # رقم معرف قناة إيران تلكس نيوز
+CHANNEL_LINK = "https://t.me/irantelexnews"  # رابط القناة
 
 bot = telebot.TeleBot(TOKEN)
 
@@ -19,7 +21,7 @@ def check_subscription(user_id):
         print(f"Error checking subscription: {e}")
         return False
 
-# --- أمر /start ---
+# --- أمر /start للترحيب والتحقق ---
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     user_id = message.from_user.id
@@ -39,7 +41,7 @@ def send_welcome(message):
         )
         return
 
-    bot.send_message(message.chat.id, "أهلاً بك! يمكنك الآن إرسال الرابط ليقوم البوت بمعالجته وتحميله.")
+    bot.send_message(message.chat.id, "أهلاً بك! أرسل رابط الفيديو من إنستغرام أو فيسبوك وسأقوم بتحميله لك فوراً.")
 
 # --- زر التحقق من الاشتراك ---
 @bot.callback_query_handler(func=lambda call: call.data == "check_sub")
@@ -55,44 +57,61 @@ def callback_query(call):
     else:
         bot.answer_callback_query(call.id, "لم تقم باشتراكك بعد!", show_alert=True)
 
-# --- معالج الروابط والرسائل النصية (هنا يتم استقبال ما ترسله) ---
+# --- معالج روابط التحميل (فيسبوك، إنستغرام، وغيرها) ---
 @bot.message_handler(func=lambda message: True)
-def handle_all_messages(message):
+def handle_media_download(message):
     user_id = message.from_user.id
     
-    # التأكد من أنه مشترك قبل معالجة أي رابط ترسله
+    # التأكد من الاشتراك قبل التحميل
     if not check_subscription(user_id):
         bot.send_message(message.chat.id, "عذراً، يجب عليك الاشتراك في القناة أولاً لتتمكن من استخدام البوت.")
         return
         
-    text = message.text
-    
-    # هنا يتم التعامل مع الرابط الذي ترسله
-    bot.send_message(message.chat.id, f"جاري العمل على الرابط الذي أرسلته...\n{text}", parse_mode="Markdown")
-@bot.message_handler(func=lambda message: True)
-def handle_media_download(message):
-    if not check_subscription(message.from_user.id):
-        bot.send_message(message.chat.id, "عذراً، يجب عليك الاشتراك في القناة أولاً.")
-        return
     url = message.text.strip()
+    
+    # التحقق من أن النص عبارة عن رابط صحيح
     if not url.startswith("http"):
-        bot.send_message(message.chat.id, "الرجاء إرسال رابط صحيح.")
+        bot.send_message(message.chat.id, "الرجاء إرسال رابط صحيح (إنستغرام أو فيسبوك).")
         return
-    msg = bot.send_message(message.chat.id, "⏳ جاري تحميل الفيديو...")
+
+    msg = bot.send_message(message.chat.id, "⏳ جاري تحميل الفيديو، يرجى الانتظار قليلاً...")
+    
     output_template = "video.mp4"
+    
+    # إعدادات أداة التحميل
+    ydl_opts = {
+        'outtmpl': output_template,
+        'format': 'best',
+        'socket_timeout': 30,
+    }
+
     try:
-        if os.path.exists(output_template): os.remove(output_template)
-        with yt_dlp.YoutubeDL({'outtmpl': output_template, 'format': 'best', 'socket_timeout': 30}) as ydl:
-            ydl.download([url])
+        # مسح أي ملف قديم متراكم
         if os.path.exists(output_template):
-            with open(output_template, 'rb') as f:
-                bot.send_video(message.chat.id, f, caption="✅ تم التحميل بنجاح عبر إيران تلكس")
+            os.remove(output_template)
+
+        # تحميل الفيديو باستخدام yt-dlp
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+
+        # إذا تم التحميل بنجاح، أرسل الفيديو للمستخدم
+        if os.path.exists(output_template):
+            with open(output_template, 'rb') as video_file:
+                bot.send_video(message.chat.id, video_file, caption="✅ تم التحميل بنجاح عبر بوت إيران تلكس")
+            # حذف الملف من السيرفر لتفريغ المساحة
             os.remove(output_template)
             bot.delete_message(message.chat.id, msg.message_id)
         else:
-            bot.edit_message_text("❌ لم يتم العثور على الفيديو.", message.chat.id, msg.message_id)
-    except:
-        bot.edit_message_text("❌ حدث خطأ أثناء التحميل.", message.chat.id, msg.message_id)
+            bot.edit_message_text("❌ لم يتم العثور على الفيديو أو أن الرابط غير مدعوم.", message.chat.id, msg.message_id)
+
+    except Exception as e:
+        print(f"Download Error: {e}")
+        try:
+            bot.edit_message_text("❌ حدث خطأ أثناء التحميل: تأكد أن الرابط عام.", message.chat.id, msg.message_id)
+        except:
+            bot.send_message(message.chat.id, "❌ حدث خطأ أثناء التحميل.")
+
+# --- تشغيل البوت باستمرار ---
 if __name__ == "__main__":
     print("Bot is running...")
     bot.infinity_polling()
