@@ -3,7 +3,8 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # --- الإعدادات ---
 TOKEN = "8650625251:AAFcv5MnB3ssM5DMCFSvrzPEgYGWtRc1U88"  
-CHANNEL_ID = "@irantelexnews"  # معرف القناة رقمي صحيح
+CHANNEL_ID = -1003631235602  # رقم معرف القناة الصحيح
+CHANNEL_LINK = "https://t.me/irantelexnews"  # رابط قناة إيران تلكس نيوز
 
 bot = telebot.TeleBot(TOKEN)
 
@@ -25,14 +26,14 @@ def send_welcome(message):
     
     if not check_subscription(user_id):
         markup = InlineKeyboardMarkup()
-        channel_button = InlineKeyboardButton("اشترك في قناة إيران تليكس نيوز", url="https://t.me/irantlex")
+        channel_button = InlineKeyboardButton("اشترك في قناة إيران تلكس نيوز", url=CHANNEL_LINK)
         check_button = InlineKeyboardButton("تحقق من الاشتراك 🔄", callback_data="check_sub")
         markup.add(channel_button)
         markup.add(check_button)
         
         bot.send_message(
             message.chat.id, 
-            "عذراً، يجب عليك الاشتراك في قناة إيران تليكس نيوز أولاً لتتمكن من استخدام البوت.\n\nبعد الاشتراك، اضغط على زر (تحقق من الاشتراك).",
+            "عذراً، يجب عليك الاشتراك في قناة إيران تلكس نيوز أولاً لتتمكن من استخدام البوت.\n\nبعد الاشتراك، اضغط على زر (تحقق من الاشتراك).",
             reply_markup=markup,
             parse_mode="Markdown"
         )
