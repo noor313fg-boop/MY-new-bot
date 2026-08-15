@@ -3,7 +3,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # --- الإعدادات ---
 TOKEN = "8650625251:AAFcv5MnB3ssM5DMCFSvrzPEgYGWtRc1U88"  
-CHANNEL_ID ="-1003631235602"  # رقم معرف القناة الصحيح
+CHANNEL_ID = "-1003631235602"  # رقم معرف القناة الصحيح
 CHANNEL_LINK = "https://t.me/irantelexnews"  # رابط قناة إيران تلكس نيوز
 
 bot = telebot.TeleBot(TOKEN)
@@ -39,7 +39,7 @@ def send_welcome(message):
         )
         return
 
-    bot.send_message(message.chat.id, "أهلاً بك! يمكنك الآن استخدام البوت بكل سلاسة.")
+    bot.send_message(message.chat.id, "أهلاً بك! يمكنك الآن إرسال الرابط ليقوم البوت بمعالجته وتحميله.")
 
 # --- زر التحقق من الاشتراك ---
 @bot.callback_query_handler(func=lambda call: call.data == "check_sub")
@@ -47,13 +47,33 @@ def callback_query(call):
     user_id = call.from_user.id
     if check_subscription(user_id):
         bot.answer_callback_query(call.id, "شكراً لاشتراكك! تم تفعيل البوت.")
-        bot.send_message(call.message.chat.id, "ممتاز! أهلاً بك مجدداً، أرسل ما تريد.")
+        bot.send_message(call.message.chat.id, "ممتاز! أهلاً بك مجدداً، أرسل الرابط الآن.")
         try:
             bot.delete_message(call.message.chat.id, call.message.message_id)
         except:
             pass
     else:
-        bot.answer_callback_query(call.id, "لم تقم بالاشتراك بعد!", show_alert=True)
+        bot.answer_callback_query(call.id, "لم تقم باشتراكك بعد!", show_alert=True)
+
+# --- معالج الروابط والرسائل النصية (هنا يتم استقبال ما ترسله) ---
+@bot.message_handler(func=lambda message: True)
+def handle_all_messages(message):
+    user_id = message.from_user.id
+    
+    # التأكد من أنه مشترك قبل معالجة أي رابط ترسله
+    if not check_subscription(user_id):
+        bot.send_message(message.chat.id, "عذراً، يجب عليك الاشتراك في القناة أولاً لتتمكن من استخدام البوت.")
+        return
+        
+    text = message.text
+    
+    # هنا يتم التعامل مع الرابط الذي ترسله
+    bot.send_message(message.chat.id, f"جاري العمل على الرابط الذي أرسلته...\n{text}", parse_mode="Markdown")
+    
+    # ----------------------------------------------------
+    # ملاحظة: في هذا المكان يمكنك وضع كود التحميل الخاص بك 
+    # (مثل استخراج الفيديو أو الملف من الرابط)
+    # ----------------------------------------------------
 
 # --- تشغيل البوت ---
 if __name__ == "__main__":
