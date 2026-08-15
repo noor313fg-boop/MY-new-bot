@@ -1,45 +1,65 @@
 import telebot
-from telebot import types
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # --- الإعدادات ---
 TOKEN = "8650625251:AAFcv5MnB3ssM5DMCFSvrzPEgYGWtRc1U88"  
-CHANNEL_ID = -1003631235602
+CHANNEL_ID = -1003631235602  # معرف القناة رقمي صحيح
+
 bot = telebot.TeleBot(TOKEN)
 
 # --- دالة التحقق من الاشتراك ---
-def is_subscribed(user_id):
+def check_subscription(user_id):
     try:
         member = bot.get_chat_member(CHANNEL_ID, user_id)
+        # إذا كان عضو أو مشرف أو مؤسس، يعتبر مشتركاً
         if member.status in ['member', 'administrator', 'creator']:
             return True
+        return False
     except Exception as e:
         print(f"Error checking subscription: {e}")
-    return False
+        return False
 
-# --- الرسالة الترحيبية ---
+# --- أمر /start ---
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message, "أهلاً بك في بوت إيران تليكس نيوز. أرسل لي رابط الفيديو من فيسبوك، إنستغرام أو يوتيوب للتحميل.")
-
-# --- المعالج الرئيسي للرسائل ---
-@bot.message_handler(func=lambda message: True)
-def handle_message(message):
     user_id = message.from_user.id
     
-    # التحقق من الاشتراك أولاً
-    if not is_subscribed(user_id):
-        markup = types.InlineKeyboardMarkup()
-        btn = types.InlineKeyboardButton("اشترك في قناة إيران تليكس نيوز", url=f"https://t.me/{CHANNEL_ID.replace('@', '')}")
-        markup.add(btn)
-        bot.reply_to(message, "⚠️ عذراً، يجب عليك الاشتراك في القناة أولاً لتتمكن من استخدام البوت.", reply_markup=markup)
+    # فحص الاشتراك
+    if not check_subscription(user_id):
+        # إنشاء زر الاشتراك الإجباري
+        markup = InlineKeyboardMarkup()
+        channel_button = InlineKeyboardButton("اشترك في قناة إيران تليكس نيوز", url="https://t.me/irantlex") # استبدل المعرف برابط قناتك إذا لزم
+        check_button = InlineKeyboardButton("تحقق من الاشتراك 🔄", callback_data="check_sub")
+        markup.add(channel_button)
+        markup.add(check_button)
+        
+        bot.send_message(
+            message.chat.id, 
+            "عذراً، يجب عليك الاشتراك في قناة إيران تليكس نيوز أولاً لتتمكن من استخدام البوت.\n\nبعد الاشتراك، اضغط على زر (تحقق من الاشتراك).",
+            reply_markup=markup,
+            parse_mode="Markdown"
+        )
         return
 
-    # --- كود التحميل (مكان وضع كودك السابق) ---
-    bot.reply_to(message, "✅ تم التحقق! جاري معالجة الفيديو الخاص بك...")
-    
-    # هنا يجب أن تضع المنطق البرمجي الخاص بك لتحميل الفيديو (مثلاً: استخدام yt-dlp)
-    # bot.send_video(message.chat.id, ...)
+    # إذا كان مشتركاً، يظهر له هذا الترحيب
+    bot.send_message(message.chat.id, "أهلاً بك! يمكنك الآن استخدام البوت بكل سلاسة.")
+
+# --- زر التحقق من الاشتراك ---
+@bot.callback_query_handler(func=lambda call: call.data == "check_sub")
+def callback_query(call):
+    user_id = call.from_user.id
+    if check_subscription(user_id):
+        bot.answer_callback_query(call.id, "شكراً لاشتراكك! تم تفعيل البوت.")
+        bot.send_message(call.message.chat.id, "ممتاز! أهلاً بك مجدداً، أرسل ما تريد.")
+        # حذف رسالة الاشتراك
+        try:
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+        except:
+            pass
+    else:
+        bot.answer_callback_query(call.id, "لم تقم بالاشتراك بعد!", show_alert=True)
 
 # --- تشغيل البوت ---
-print("Bot is running...")
-bot.infinity_polling()
+if name == "main":
+    print("Bot is running...")
+    bot.infinity_polling()
